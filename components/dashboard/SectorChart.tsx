@@ -2,9 +2,12 @@
 
 import { Paper, Typography, Box } from '@mui/material';
 import {
-  Treemap,
+  PieChart,
+  Pie,
+  Cell,
   ResponsiveContainer,
   Tooltip,
+  Legend,
 } from 'recharts';
 import { SectorAllocation } from '@/types/portfolio';
 
@@ -36,66 +39,24 @@ const shortenSectorName = (name: string) => {
     .trim();
 };
 
-// ツリーマップのカスタムコンテンツ
-const CustomTreemapContent = (props: any) => {
-  const { x, y, width, height, name, value } = props;
-
-  // 面積が小さすぎる場合はラベルを表示しない
-  const showLabel = width > 60 && height > 40;
-  const showPercentage = width > 40 && height > 25;
-
-  return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        style={{
-          fill: props.fill,
-          stroke: '#0a0d14',
-          strokeWidth: 2,
-          cursor: 'pointer',
-        }}
-      />
-      {showLabel && (
-        <text
-          x={x + width / 2}
-          y={y + height / 2 - 8}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize={width > 100 ? 14 : 11}
-          fontWeight="600"
-        >
-          {shortenSectorName(name)}
-        </text>
-      )}
-      {showPercentage && (
-        <text
-          x={x + width / 2}
-          y={y + height / 2 + (showLabel ? 12 : 4)}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize={width > 100 ? 16 : 13}
-          fontWeight="700"
-        >
-          {value.toFixed(1)}%
-        </text>
-      )}
-    </g>
-  );
-};
-
 export default function SectorChart({ data }: SectorChartProps) {
-  // ツリーマップ用にデータを整形
-  const treemapData = data.map((item) => ({
-    name: item.sector,
+  // 円グラフ用にデータを整形
+  const chartData = data.map((item) => ({
+    name: shortenSectorName(item.sector),
     value: item.percentage,
-    fill: SECTOR_COLORS[item.sector] || '#4f8ef7',
+    color: SECTOR_COLORS[item.sector] || '#4f8ef7',
   }));
 
-  const formatTooltip = (value: number, name: string) => {
-    return [`${value.toFixed(2)}%`, shortenSectorName(name)];
+  const formatTooltip = (value: number) => {
+    return `${value.toFixed(2)}%`;
+  };
+
+  const renderLabel = (entry: any) => {
+    // 5%以上の場合のみラベルを表示
+    if (entry.value >= 5) {
+      return `${entry.value.toFixed(1)}%`;
+    }
+    return '';
   };
 
   return (
@@ -104,20 +65,27 @@ export default function SectorChart({ data }: SectorChartProps) {
         セクター別投資割合
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-        ポートフォリオのセクター配分（VTI基準）- 面積で割合を表示
+        ポートフォリオのセクター配分（VTI基準）- 円グラフで割合を表示
       </Typography>
 
-      {/* ツリーマップ */}
+      {/* 円グラフ */}
       <Box sx={{ width: '100%', height: 450 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <Treemap
-            data={treemapData}
-            dataKey="value"
-            aspectRatio={4 / 3}
-            stroke="#0a0d14"
-            fill="#8884d8"
-            content={<CustomTreemapContent />}
-          >
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={renderLabel}
+              outerRadius={140}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
             <Tooltip
               contentStyle={{
                 backgroundColor: '#111827',
@@ -126,7 +94,8 @@ export default function SectorChart({ data }: SectorChartProps) {
               }}
               formatter={formatTooltip}
             />
-          </Treemap>
+            <Legend />
+          </PieChart>
         </ResponsiveContainer>
       </Box>
 
