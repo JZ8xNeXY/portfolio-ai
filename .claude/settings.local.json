@@ -5,7 +5,10 @@
       "Bash(lsof:*)",
       "Bash(npx tsx test-parser.ts)",
       "Bash(ls:*)",
-      "Bash(node analyze-sector.js:*)"
+      "Bash(node analyze-sector.js:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

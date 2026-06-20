@@ -1,7 +1,16 @@
 'use client';
 
 import { Paper, Typography, Box } from '@mui/material';
-import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
 import { SectorAllocation } from '@/types/portfolio';
 
 interface SectorChartProps {
@@ -33,79 +42,17 @@ const shortenSectorName = (name: string) => {
 };
 
 export default function SectorChart({ data }: SectorChartProps) {
-  // Treemap用に階層構造のデータを作成
-  const treemapData = {
-    name: 'Portfolio',
-    children: data.map((item) => ({
-      name: shortenSectorName(item.sector),
-      size: item.percentage,
-      fill: SECTOR_COLORS[item.sector] || '#4f8ef7',
-    })),
-  };
+  // チャート用にデータを整形（パーセンテージの大きい順にソート）
+  const chartData = [...data]
+    .sort((a, b) => b.percentage - a.percentage)
+    .map((item) => ({
+      sector: shortenSectorName(item.sector),
+      percentage: item.percentage,
+      color: SECTOR_COLORS[item.sector] || '#4f8ef7',
+    }));
 
-  // カスタムラベル
-  const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, value, depth } = props;
-
-    // ルートノードは表示しない
-    if (depth === 1) {
-      return null;
-    }
-
-    // 小さすぎる領域にはラベルを表示しない
-    if (width < 60 || height < 40) {
-      return null;
-    }
-
-    return (
-      <g>
-        <text
-          x={x + width / 2}
-          y={y + height / 2 - 8}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize={12}
-          fontWeight={600}
-        >
-          {name}
-        </text>
-        <text
-          x={x + width / 2}
-          y={y + height / 2 + 8}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize={14}
-          fontWeight={700}
-        >
-          {value ? value.toFixed(1) : '0'}%
-        </text>
-      </g>
-    );
-  };
-
-  // カスタムツールチップ
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <Box
-          sx={{
-            backgroundColor: '#111827',
-            border: '1px solid #1f2d45',
-            borderRadius: '8px',
-            p: 1.5,
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            {data.name}
-          </Typography>
-          <Typography variant="body2" color="primary.main">
-            {data.percentage.toFixed(2)}%
-          </Typography>
-        </Box>
-      );
-    }
-    return null;
+  const formatTooltip = (value: number) => {
+    return `${value.toFixed(2)}%`;
   };
 
   return (
@@ -114,28 +61,54 @@ export default function SectorChart({ data }: SectorChartProps) {
         セクター別投資割合
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-        ポートフォリオのセクター配分（VTI基準）- 面積で割合を表示
+        ポートフォリオのセクター配分（VTI基準）
       </Typography>
 
-      <ResponsiveContainer width="100%" height={500}>
-        <Treemap
-          data={[treemapData]}
-          dataKey="size"
-          aspectRatio={4 / 3}
-          stroke="#0a0d14"
-          fill="#4f8ef7"
-          content={<CustomizedContent />}
-        >
-          <Tooltip content={<CustomTooltip />} />
-        </Treemap>
-      </ResponsiveContainer>
+      {/* 横棒グラフ */}
+      <Box sx={{ width: '100%', height: 450 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2d45" />
+            <XAxis
+              type="number"
+              stroke="#9ca3af"
+              tick={{ fill: '#9ca3af' }}
+              tickFormatter={(value) => `${value}%`}
+            />
+            <YAxis
+              type="category"
+              dataKey="sector"
+              stroke="#9ca3af"
+              tick={{ fill: '#9ca3af' }}
+              width={140}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#111827',
+                border: '1px solid #1f2d45',
+                borderRadius: '8px',
+              }}
+              formatter={formatTooltip}
+            />
+            <Bar dataKey="percentage" radius={[0, 4, 4, 0]}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
 
       {/* 詳細リスト */}
       <Box sx={{ mt: 3 }}>
         <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
           詳細
         </Typography>
-        {data.map((item, index) => (
+        {chartData.map((item, index) => (
           <Box
             key={index}
             sx={{
@@ -143,7 +116,7 @@ export default function SectorChart({ data }: SectorChartProps) {
               justifyContent: 'space-between',
               alignItems: 'center',
               py: 1,
-              borderBottom: index < data.length - 1 ? '1px solid #1f2d45' : 'none',
+              borderBottom: index < chartData.length - 1 ? '1px solid #1f2d45' : 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -152,10 +125,10 @@ export default function SectorChart({ data }: SectorChartProps) {
                   width: 12,
                   height: 12,
                   borderRadius: '2px',
-                  backgroundColor: SECTOR_COLORS[item.sector] || '#4f8ef7',
+                  backgroundColor: item.color,
                 }}
               />
-              <Typography variant="body2">{shortenSectorName(item.sector)}</Typography>
+              <Typography variant="body2">{item.sector}</Typography>
             </Box>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {item.percentage.toFixed(2)}%
