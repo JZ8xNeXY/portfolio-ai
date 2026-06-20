@@ -53,7 +53,7 @@ export default function StackedChart({ data }: StackedChartProps) {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           カテゴリ別資産推移
@@ -70,7 +70,8 @@ export default function StackedChart({ data }: StackedChartProps) {
         </ToggleButtonGroup>
       </Box>
 
-      <ResponsiveContainer width="100%" height={400}>
+      <Box sx={{ flex: 1 }}>
+        <ResponsiveContainer width="100%" height={350}>
         <AreaChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2d45" />
           <XAxis
@@ -127,7 +128,8 @@ export default function StackedChart({ data }: StackedChartProps) {
             fillOpacity={0.8}
           />
         </AreaChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      </Box>
     </Paper>
   );
 }

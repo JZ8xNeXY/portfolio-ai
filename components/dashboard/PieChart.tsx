@@ -35,15 +35,17 @@ export default function AssetPieChart({ data }: AssetPieChartProps) {
   };
 
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-        資産配分
-      </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        最新データ: {new Date(data.date).toLocaleDateString('ja-JP')}
-      </Typography>
+    <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+          資産配分
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          最新データ: {new Date(data.date).toLocaleDateString('ja-JP')}
+        </Typography>
+      </Box>
 
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={350}>
         <RechartsPie>
           <Pie
             data={chartData}
