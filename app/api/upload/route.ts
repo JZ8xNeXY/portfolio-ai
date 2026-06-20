@@ -33,9 +33,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vercel Blobにアップロード
+    // Vercel Blobにアップロード（Privateアクセス）
     const blob = await put(`portfolio/${fileName}`, file, {
-      access: 'public',
+      access: 'private',
     });
 
     console.log('Blob uploaded:', blob.url);
