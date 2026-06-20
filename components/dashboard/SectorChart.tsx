@@ -33,18 +33,24 @@ const shortenSectorName = (name: string) => {
 };
 
 export default function SectorChart({ data }: SectorChartProps) {
-  // Treemap用にデータを変換
-  const treemapData = data.map((item) => ({
-    name: shortenSectorName(item.sector),
-    size: item.percentage,
-    fill: SECTOR_COLORS[item.sector] || '#4f8ef7',
-    fullName: item.sector,
-    percentage: item.percentage,
-  }));
+  // Treemap用に階層構造のデータを作成
+  const treemapData = {
+    name: 'Portfolio',
+    children: data.map((item) => ({
+      name: shortenSectorName(item.sector),
+      size: item.percentage,
+      fill: SECTOR_COLORS[item.sector] || '#4f8ef7',
+    })),
+  };
 
   // カスタムラベル
   const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, value } = props;
+    const { x, y, width, height, name, value, depth } = props;
+
+    // ルートノードは表示しない
+    if (depth === 1) {
+      return null;
+    }
 
     // 小さすぎる領域にはラベルを表示しない
     if (width < 60 || height < 40) {
@@ -113,9 +119,11 @@ export default function SectorChart({ data }: SectorChartProps) {
 
       <ResponsiveContainer width="100%" height={500}>
         <Treemap
-          data={treemapData}
+          data={[treemapData]}
           dataKey="size"
+          aspectRatio={4 / 3}
           stroke="#0a0d14"
+          fill="#4f8ef7"
           content={<CustomizedContent />}
         >
           <Tooltip content={<CustomTooltip />} />
