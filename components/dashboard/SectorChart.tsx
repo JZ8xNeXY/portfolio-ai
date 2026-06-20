@@ -2,14 +2,9 @@
 
 import { Paper, Typography, Box } from '@mui/material';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
+  Treemap,
   ResponsiveContainer,
-  Cell,
+  Tooltip,
 } from 'recharts';
 import { SectorAllocation } from '@/types/portfolio';
 
@@ -41,18 +36,66 @@ const shortenSectorName = (name: string) => {
     .trim();
 };
 
-export default function SectorChart({ data }: SectorChartProps) {
-  // チャート用にデータを整形（パーセンテージの大きい順にソート）
-  const chartData = [...data]
-    .sort((a, b) => b.percentage - a.percentage)
-    .map((item) => ({
-      sector: shortenSectorName(item.sector),
-      percentage: item.percentage,
-      color: SECTOR_COLORS[item.sector] || '#4f8ef7',
-    }));
+// ツリーマップのカスタムコンテンツ
+const CustomTreemapContent = (props: any) => {
+  const { x, y, width, height, name, value } = props;
 
-  const formatTooltip = (value: number) => {
-    return `${value.toFixed(2)}%`;
+  // 面積が小さすぎる場合はラベルを表示しない
+  const showLabel = width > 60 && height > 40;
+  const showPercentage = width > 40 && height > 25;
+
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        style={{
+          fill: props.fill,
+          stroke: '#0a0d14',
+          strokeWidth: 2,
+          cursor: 'pointer',
+        }}
+      />
+      {showLabel && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 - 8}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={width > 100 ? 14 : 11}
+          fontWeight="600"
+        >
+          {shortenSectorName(name)}
+        </text>
+      )}
+      {showPercentage && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + (showLabel ? 12 : 4)}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={width > 100 ? 16 : 13}
+          fontWeight="700"
+        >
+          {value.toFixed(1)}%
+        </text>
+      )}
+    </g>
+  );
+};
+
+export default function SectorChart({ data }: SectorChartProps) {
+  // ツリーマップ用にデータを整形
+  const treemapData = data.map((item) => ({
+    name: item.sector,
+    value: item.percentage,
+    fill: SECTOR_COLORS[item.sector] || '#4f8ef7',
+  }));
+
+  const formatTooltip = (value: number, name: string) => {
+    return [`${value.toFixed(2)}%`, shortenSectorName(name)];
   };
 
   return (
@@ -61,31 +104,20 @@ export default function SectorChart({ data }: SectorChartProps) {
         セクター別投資割合
       </Typography>
       <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-        ポートフォリオのセクター配分（VTI基準）
+        ポートフォリオのセクター配分（VTI基準）- 面積で割合を表示
       </Typography>
 
-      {/* 横棒グラフ */}
+      {/* ツリーマップ */}
       <Box sx={{ width: '100%', height: 450 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+          <Treemap
+            data={treemapData}
+            dataKey="value"
+            aspectRatio={4 / 3}
+            stroke="#0a0d14"
+            fill="#8884d8"
+            content={<CustomTreemapContent />}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2d45" />
-            <XAxis
-              type="number"
-              stroke="#9ca3af"
-              tick={{ fill: '#9ca3af' }}
-              tickFormatter={(value) => `${value}%`}
-            />
-            <YAxis
-              type="category"
-              dataKey="sector"
-              stroke="#9ca3af"
-              tick={{ fill: '#9ca3af' }}
-              width={140}
-            />
             <Tooltip
               contentStyle={{
                 backgroundColor: '#111827',
@@ -94,12 +126,7 @@ export default function SectorChart({ data }: SectorChartProps) {
               }}
               formatter={formatTooltip}
             />
-            <Bar dataKey="percentage" radius={[0, 4, 4, 0]}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
+          </Treemap>
         </ResponsiveContainer>
       </Box>
 
@@ -108,33 +135,35 @@ export default function SectorChart({ data }: SectorChartProps) {
         <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
           詳細
         </Typography>
-        {chartData.map((item, index) => (
-          <Box
-            key={index}
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              py: 1,
-              borderBottom: index < chartData.length - 1 ? '1px solid #1f2d45' : 'none',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '2px',
-                  backgroundColor: item.color,
-                }}
-              />
-              <Typography variant="body2">{item.sector}</Typography>
+        {data
+          .sort((a, b) => b.percentage - a.percentage)
+          .map((item, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                py: 1,
+                borderBottom: index < data.length - 1 ? '1px solid #1f2d45' : 'none',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '2px',
+                    backgroundColor: SECTOR_COLORS[item.sector] || '#4f8ef7',
+                  }}
+                />
+                <Typography variant="body2">{shortenSectorName(item.sector)}</Typography>
+              </Box>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {item.percentage.toFixed(2)}%
+              </Typography>
             </Box>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {item.percentage.toFixed(2)}%
-            </Typography>
-          </Box>
-        ))}
+          ))}
       </Box>
     </Paper>
   );
