@@ -1,16 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { list } from '@vercel/blob';
 import { parsePortfolioExcel } from './excel/parser';
 import { ParseResult } from '@/types/portfolio';
 
 /**
  * ポートフォリオデータを取得
  * ローカル環境: ファイルシステムから読み込み
- * Vercel環境: Vercel Blobから読み込み（未実装 - 常にnullを返す）
+ * Vercel環境: Vercel Blobから最新ファイルを読み込み
  */
 export async function getPortfolioData(): Promise<ParseResult | null> {
   try {
-    // ローカル環境でのみExcelファイルを読み込む
+    // ローカル環境: ファイルシステムから読み込み
     if (process.env.NODE_ENV === 'development') {
       const filePath = path.join(process.cwd(), '資産運用(080630) .xlsx');
       if (fs.existsSync(filePath)) {
@@ -19,9 +20,25 @@ export async function getPortfolioData(): Promise<ParseResult | null> {
       }
     }
 
-    // Vercel環境では、アップロード機能を使用してもらう
-    console.log('データファイルが見つかりません。/upload からファイルをアップロードしてください。');
-    return null;
+    // Vercel環境: Blobから最新ファイルを取得
+    const { blobs } = await list({
+      prefix: 'portfolio/',
+      limit: 1,
+    });
+
+    if (blobs.length === 0) {
+      console.log('データファイルが見つかりません。/upload からファイルをアップロードしてください。');
+      return null;
+    }
+
+    // 最新のファイルをダウンロード
+    const latestBlob = blobs[0];
+    const response = await fetch(latestBlob.url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // パース
+    return await parsePortfolioExcel(buffer);
   } catch (error) {
     console.error('データ取得エラー:', error);
     return null;
