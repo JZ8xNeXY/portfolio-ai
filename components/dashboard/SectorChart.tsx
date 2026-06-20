@@ -44,7 +44,7 @@ export default function SectorChart({ data }: SectorChartProps) {
 
   // カスタムラベル
   const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, percentage } = props;
+    const { x, y, width, height, name, value } = props;
 
     // 小さすぎる領域にはラベルを表示しない
     if (width < 60 || height < 40) {
@@ -71,7 +71,7 @@ export default function SectorChart({ data }: SectorChartProps) {
           fontSize={14}
           fontWeight={700}
         >
-          {percentage.toFixed(1)}%
+          {value ? value.toFixed(1) : '0'}%
         </text>
       </g>
     );
