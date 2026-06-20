@@ -116,7 +116,6 @@ export default function SectorChart({ data }: SectorChartProps) {
           data={treemapData}
           dataKey="size"
           stroke="#0a0d14"
-          strokeWidth={2}
           content={<CustomizedContent />}
         >
           <Tooltip content={<CustomTooltip />} />
