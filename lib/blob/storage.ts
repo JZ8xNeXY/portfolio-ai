@@ -7,7 +7,7 @@ import { put, head } from '@vercel/blob';
  */
 export async function uploadExcelFile(file: File): Promise<string> {
   const blob = await put(`portfolio/${file.name}`, file, {
-    access: 'private',
+    addRandomSuffix: false,
   });
 
   return blob.url;
