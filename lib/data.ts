@@ -13,9 +13,17 @@ export async function getPortfolioData(): Promise<ParseResult | null> {
   try {
     // ローカル環境: ファイルシステムから読み込み
     if (process.env.NODE_ENV === 'development') {
-      const filePath = path.join(process.cwd(), '資産運用(080630) .xlsx');
-      if (fs.existsSync(filePath)) {
+      // 資産運用*.xlsxパターンのファイルを検索
+      const files = fs.readdirSync(process.cwd()).filter(f =>
+        f.startsWith('資産運用') && (f.endsWith('.xlsx') || f.endsWith('.xls'))
+      );
+
+      if (files.length > 0) {
+        // 最新のファイルを取得（ファイル名でソート）
+        const latestFile = files.sort().reverse()[0];
+        const filePath = path.join(process.cwd(), latestFile);
         const fileBuffer = fs.readFileSync(filePath);
+        console.log(`読み込みファイル: ${latestFile}`);
         return await parsePortfolioExcel(fileBuffer);
       }
     }
